@@ -23,6 +23,8 @@ setup(
     zip_safe=False,
     install_requires=[
         'openprocurement.search',
+        'mysqlclient>=1.3',
+        'simplejson>=3.11'
     ],
     entry_points={
     }

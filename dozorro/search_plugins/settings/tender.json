@@ -1,0 +1,581 @@
+{
+  "dozorro": {
+    "include_in_all": false,
+    "properties": {
+      "formModels": {
+        "analyzer": "whitespace_lower",
+        "include_in_all": true,
+        "type": "string"
+      },
+      "forms": {
+        "include_in_all": false,
+        "properties": {
+          "date": {
+            "format": "dateOptionalTime",
+            "include_in_all": false,
+            "type": "date"
+          },
+          "id": {
+            "analyzer": "whitespace_lower",
+            "include_in_all": false,
+            "type": "string"
+          },
+          "model": {
+            "analyzer": "whitespace_lower",
+            "include_in_all": false,
+            "type": "string"
+          },
+          "owner": {
+            "analyzer": "whitespace_lower",
+            "include_in_all": false,
+            "type": "string"
+          },
+          "payload": {
+            "include_in_all": false,
+            "properties": {
+              "author": {
+                "include_in_all": false,
+                "properties": {
+                  "address": {
+                    "include_in_all": true,
+                    "properties": {
+                      "countryName": {
+                        "include_in_all": true,
+                        "type": "string"
+                      },
+                      "locality": {
+                        "include_in_all": true,
+                        "type": "string"
+                      },
+                      "postalCode": {
+                        "include_in_all": true,
+                        "type": "string"
+                      },
+                      "region": {
+                        "include_in_all": true,
+                        "type": "string"
+                      },
+                      "streetAddress": {
+                        "include_in_all": true,
+                        "type": "string"
+                      }
+                    }
+                  },
+                  "auth": {
+                    "include_in_all": false,
+                    "properties": {
+                      "id": {
+                        "analyzer": "whitespace_lower",
+                        "include_in_all": false,
+                        "type": "string"
+                      },
+                      "provider": {
+                        "include_in_all": false,
+                        "type": "string"
+                      },
+                      "scheme": {
+                        "include_in_all": false,
+                        "type": "string"
+                      }
+                    }
+                  },
+                  "contactPoint": {
+                    "include_in_all": true,
+                    "properties": {
+                      "email": {
+                        "include_in_all": true,
+                        "type": "string"
+                      },
+                      "name": {
+                        "include_in_all": true,
+                        "type": "string"
+                      },
+                      "telephone": {
+                        "include_in_all": true,
+                        "type": "string"
+                      }
+                    }
+                  },
+                  "identifier": {
+                    "include_in_all": true,
+                    "properties": {
+                      "id": {
+                        "include_in_all": true,
+                        "type": "string"
+                      },
+                      "legalName": {
+                        "include_in_all": true,
+                        "type": "string"
+                      },
+                      "scheme": {
+                        "include_in_all": true,
+                        "type": "string"
+                      },
+                      "uri": {
+                        "include_in_all": true,
+                        "type": "string"
+                      }
+                    }
+                  },
+                  "name": {
+                    "include_in_all": true,
+                    "type": "string"
+                  }
+                }
+              },
+              "claimPath": {
+                "analyzer": "whitespace_lower",
+                "include_in_all": false,
+                "type": "string"
+              },
+              "complaintPath": {
+                "analyzer": "whitespace_lower",
+                "include_in_all": false,
+                "type": "string"
+              },
+              "formData": {
+                "include_in_all": false,
+                "properties": {
+                  "abuseCode": {
+                    "include_in_all": false,
+                    "type": "string"
+                  },
+                  "abuseComment": {
+                    "include_in_all": true,
+                    "type": "string"
+                  },
+                  "abuseName": {
+                    "include_in_all": false,
+                    "type": "string"
+                  },
+                  "actionCode": {
+                    "include_in_all": false,
+                    "type": "string"
+                  },
+                  "actionComment": {
+                    "include_in_all": true,
+                    "type": "string"
+                  },
+                  "actionName": {
+                    "include_in_all": false,
+                    "type": "string"
+                  },
+                  "answeredInTime": {
+                    "include_in_all": false,
+                    "type": "string"
+                  },
+                  "answeredInTimeComment": {
+                    "include_in_all": true,
+                    "type": "string"
+                  },
+                  "argumentativeDisqualification": {
+                    "include_in_all": false,
+                    "type": "string"
+                  },
+                  "argumentativeDisqualificationComment": {
+                    "include_in_all": true,
+                    "type": "string"
+                  },
+                  "bankGuaranteeExpediency": {
+                    "include_in_all": false,
+                    "type": "string"
+                  },
+                  "bankGuaranteeExpediencyComment": {
+                    "include_in_all": true,
+                    "type": "string"
+                  },
+                  "bestPrice": {
+                    "include_in_all": false,
+                    "type": "string"
+                  },
+                  "bestPriceComment": {
+                    "include_in_all": true,
+                    "type": "string"
+                  },
+                  "cancellationLegitimacy": {
+                    "include_in_all": false,
+                    "type": "string"
+                  },
+                  "cancellationLegitimacyComment": {
+                    "include_in_all": true,
+                    "type": "string"
+                  },
+                  "cheapestWasDisqualified": {
+                    "include_in_all": false,
+                    "type": "string"
+                  },
+                  "cheapestWasDisqualifiedComment": {
+                    "include_in_all": true,
+                    "type": "string"
+                  },
+                  "communicationMethod": {
+                    "include_in_all": false,
+                    "type": "string"
+                  },
+                  "correctClassifiersCodes": {
+                    "include_in_all": false,
+                    "type": "string"
+                  },
+                  "correctClassifiersCodesComment": {
+                    "include_in_all": true,
+                    "type": "string"
+                  },
+                  "correctExpectedCost": {
+                    "include_in_all": false,
+                    "type": "string"
+                  },
+                  "correctExpectedCostComment": {
+                    "include_in_all": true,
+                    "type": "string"
+                  },
+                  "impartialParticipantRequirements": {
+                    "include_in_all": false,
+                    "type": "string"
+                  },
+                  "impartialParticipantRequirementsComment": {
+                    "include_in_all": true,
+                    "type": "string"
+                  },
+                  "impartialProductRequirements": {
+                    "include_in_all": false,
+                    "type": "string"
+                  },
+                  "impartialProductRequirementsComment": {
+                    "include_in_all": true,
+                    "type": "string"
+                  },
+                  "lotsExpediency": {
+                    "include_in_all": false,
+                    "type": "string"
+                  },
+                  "lotsExpediencyComment": {
+                    "include_in_all": true,
+                    "type": "string"
+                  },
+                  "maxCompetition": {
+                    "include_in_all": false,
+                    "type": "string"
+                  },
+                  "maxCompetitionComment": {
+                    "include_in_all": true,
+                    "type": "string"
+                  },
+                  "overallScore": {
+                    "include_in_all": false,
+                    "type": "string"
+                  },
+                  "overallScoreComment": {
+                    "include_in_all": true,
+                    "type": "string"
+                  },
+                  "procuringQuestions": {
+                    "include_in_all": false,
+                    "type": "string"
+                  },
+                  "procuringQuestionsComment": {
+                    "include_in_all": true,
+                    "type": "string"
+                  },
+                  "productQuality": {
+                    "include_in_all": false,
+                    "type": "string"
+                  },
+                  "productQualityComment": {
+                    "include_in_all": true,
+                    "type": "string"
+                  },
+                  "purchaserDutiesExecution": {
+                    "include_in_all": false,
+                    "type": "string"
+                  },
+                  "purchaserDutiesExecutionComment": {
+                    "include_in_all": true,
+                    "type": "string"
+                  },
+                  "purchaserInteractionProblems": {
+                    "include_in_all": false,
+                    "type": "string"
+                  },
+                  "purchaserInteractionProblemsComment": {
+                    "include_in_all": true,
+                    "type": "string"
+                  },
+                  "qualitativeCriteria": {
+                    "include_in_all": false,
+                    "type": "string"
+                  },
+                  "qualitativeCriteriaComment": {
+                    "include_in_all": true,
+                    "type": "string"
+                  },
+                  "reason": {
+                    "include_in_all": false,
+                    "type": "string"
+                  },
+                  "resultCode": {
+                    "include_in_all": false,
+                    "type": "string"
+                  },
+                  "resultComment": {
+                    "include_in_all": true,
+                    "type": "string"
+                  },
+                  "resultName": {
+                    "include_in_all": false,
+                    "type": "string"
+                  },
+                  "supplierDutiesExecution": {
+                    "include_in_all": false,
+                    "type": "string"
+                  },
+                  "supplierDutiesExecutionComment": {
+                    "include_in_all": true,
+                    "type": "string"
+                  },
+                  "supplierQuestions": {
+                    "include_in_all": false,
+                    "type": "string"
+                  },
+                  "supplierQuestionsComment": {
+                    "include_in_all": true,
+                    "type": "string"
+                  }
+                }
+              },
+              "parentForm": {
+                "analyzer": "whitespace_lower",
+                "include_in_all": false,
+                "type": "string"
+              },
+              "tender": {
+                "analyzer": "whitespace_lower",
+                "include_in_all": false,
+                "type": "string"
+              },
+              "tenderContract": {
+                "analyzer": "whitespace_lower",
+                "include_in_all": false,
+                "type": "string"
+              }
+            }
+          }
+        }
+      },
+      "formsCount": {
+        "include_in_all": false,
+        "type": "long"
+      },
+      "riskCodes": {
+        "analyzer": "whitespace_lower",
+        "include_in_all": true,
+        "type": "string"
+      },
+      "riskScore": {
+        "include_in_all": false,
+        "type": "double"
+      },
+      "riskValues": {
+        "include_in_all": false,
+        "properties": {
+          "F1000": {
+            "include_in_all": false,
+            "type": "double"
+          },
+          "F1100": {
+            "include_in_all": false,
+            "type": "double"
+          },
+          "F1110": {
+            "include_in_all": false,
+            "type": "double"
+          },
+          "F1200": {
+            "include_in_all": false,
+            "type": "double"
+          },
+          "F1210": {
+            "include_in_all": false,
+            "type": "double"
+          },
+          "F2100": {
+            "include_in_all": false,
+            "type": "double"
+          },
+          "F2110": {
+            "include_in_all": false,
+            "type": "double"
+          },
+          "F2120": {
+            "include_in_all": false,
+            "type": "double"
+          },
+          "F2200": {
+            "include_in_all": false,
+            "type": "double"
+          },
+          "F2210": {
+            "include_in_all": false,
+            "type": "double"
+          },
+          "F2220": {
+            "include_in_all": false,
+            "type": "double"
+          },
+          "R1020": {
+            "include_in_all": false,
+            "type": "double"
+          },
+          "R1030": {
+            "include_in_all": false,
+            "type": "double"
+          },
+          "R1040": {
+            "include_in_all": false,
+            "type": "double"
+          },
+          "R1050": {
+            "include_in_all": false,
+            "type": "double"
+          },
+          "R1060": {
+            "include_in_all": false,
+            "type": "double"
+          },
+          "R1070": {
+            "include_in_all": false,
+            "type": "double"
+          },
+          "R1075": {
+            "include_in_all": false,
+            "type": "double"
+          },
+          "R1080": {
+            "include_in_all": false,
+            "type": "double"
+          },
+          "R1090": {
+            "include_in_all": false,
+            "type": "double"
+          },
+          "R1110": {
+            "include_in_all": false,
+            "type": "double"
+          },
+          "R1120": {
+            "include_in_all": false,
+            "type": "double"
+          },
+          "R1130": {
+            "include_in_all": false,
+            "type": "double"
+          },
+          "R1150": {
+            "include_in_all": false,
+            "type": "double"
+          },
+          "R1170": {
+            "include_in_all": false,
+            "type": "double"
+          },
+          "R2000": {
+            "include_in_all": false,
+            "type": "double"
+          },
+          "R2010": {
+            "include_in_all": false,
+            "type": "double"
+          },
+          "R2030": {
+            "include_in_all": false,
+            "type": "double"
+          },
+          "R2040": {
+            "include_in_all": false,
+            "type": "double"
+          },
+          "R2050": {
+            "include_in_all": false,
+            "type": "double"
+          },
+          "R3010": {
+            "include_in_all": false,
+            "type": "double"
+          },
+          "R3020": {
+            "include_in_all": false,
+            "type": "double"
+          },
+          "R3035": {
+            "include_in_all": false,
+            "type": "double"
+          },
+          "R3040": {
+            "include_in_all": false,
+            "type": "double"
+          },
+          "R3050": {
+            "include_in_all": false,
+            "type": "double"
+          },
+          "R3060": {
+            "include_in_all": false,
+            "type": "double"
+          },
+          "R3070": {
+            "include_in_all": false,
+            "type": "double"
+          },
+          "R3080": {
+            "include_in_all": false,
+            "type": "double"
+          },
+          "R4010": {
+            "include_in_all": false,
+            "type": "double"
+          },
+          "R4020": {
+            "include_in_all": false,
+            "type": "double"
+          },
+          "R4071": {
+            "include_in_all": false,
+            "type": "double"
+          },
+          "R4072": {
+            "include_in_all": false,
+            "type": "double"
+          },
+          "R4073": {
+            "include_in_all": false,
+            "type": "double"
+          },
+          "R4074": {
+            "include_in_all": false,
+            "type": "double"
+          },
+          "R4075": {
+            "include_in_all": false,
+            "type": "double"
+          },
+          "R4076": {
+            "include_in_all": false,
+            "type": "double"
+          },
+          "R4077": {
+            "include_in_all": false,
+            "type": "double"
+          },
+          "R4078": {
+            "include_in_all": false,
+            "type": "double"
+          },
+          "lotID": {
+            "analyzer": "whitespace_lower",
+            "include_in_all": false,
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}

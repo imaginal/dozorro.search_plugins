@@ -1,0 +1,9 @@
+dozorro.search_plugins (0.1b) unstable; urgency=low
+
+ * Index dozorro_risk_values, dozorro_risk_score, dozorro_json_forms
+ * Search by form_code, form_count, risk_code, risk_score and risk_XXX
+ * Change MySQL-python 1.2 to mysqlclient 1.3 with read/write timeouts
+
+
+ -- Volodymyr Flonts <flyonts@gmail.com>  Sun Aug 26 12:40:43 EEST 2018
+
