@@ -121,9 +121,15 @@ class SearchPlugin(BasePlugin):
     def create_cursor(self):
         logger.info("Connect to mysql {user}@{host}/{db}".format(**self.mysql_config))
         # close db handle if present
+        if getattr(self, 'cursor', None):
+            self.cursor = None
         if getattr(self, 'dbcon', None):
-            dbcon, self.dbcon = self.dbcon, None
-            dbcon.close()
+            try:
+                dbcon, self.dbcon = self.dbcon, None
+                dbcon.close()
+                del dbcon
+            except MySQLdb.MySQLError:
+                pass
         self.dbcon = MySQLdb.Connect(passwd=self.mysql_passwd,
             **self.mysql_config)
         self.cursor = self.dbcon.cursor()
@@ -214,7 +220,8 @@ class SearchPlugin(BasePlugin):
                 if i > 1:
                     raise
                 logger.warning("MySQLError %s", str(e))
-                index.engine.sleep(10)
+                if getattr(index, 'engine', None):
+                    index.engine.sleep(10)
                 self.create_cursor()
 
     def before_index_item(self, index, item):
