@@ -86,11 +86,19 @@
                         "include_in_all": true,
                         "type": "string"
                       },
+                      "faxNumber": {
+                        "include_in_all": true,
+                        "type": "string"
+                      },
                       "name": {
                         "include_in_all": true,
                         "type": "string"
                       },
                       "telephone": {
+                        "include_in_all": true,
+                        "type": "string"
+                      },
+                      "url": {
                         "include_in_all": true,
                         "type": "string"
                       }
@@ -160,6 +168,14 @@
                     "include_in_all": false,
                     "type": "string"
                   },
+                  "answerSatisfaction": {
+                    "include_in_all": false,
+                    "type": "string"
+                  },
+                  "answerSatisfactionComment": {
+                    "include_in_all": true,
+                    "type": "string"
+                  },
                   "answeredInTime": {
                     "include_in_all": false,
                     "type": "string"
@@ -208,8 +224,28 @@
                     "include_in_all": true,
                     "type": "string"
                   },
+                  "claimAnswerSatisfaction": {
+                    "include_in_all": false,
+                    "type": "string"
+                  },
+                  "claimAnswerSatisfactionComment": {
+                    "include_in_all": true,
+                    "type": "string"
+                  },
                   "communicationMethod": {
                     "include_in_all": false,
+                    "type": "string"
+                  },
+                  "communicationMethodComment": {
+                    "include_in_all": true,
+                    "type": "string"
+                  },
+                  "complaintAnswerSatisfaction": {
+                    "include_in_all": false,
+                    "type": "string"
+                  },
+                  "complaintAnswerSatisfactionComment": {
+                    "include_in_all": true,
                     "type": "string"
                   },
                   "correctClassifiersCodes": {
@@ -332,6 +368,14 @@
                     "include_in_all": true,
                     "type": "string"
                   },
+                  "supplierInteractionProblems": {
+                    "include_in_all": false,
+                    "type": "string"
+                  },
+                  "supplierInteractionProblemsComment": {
+                    "include_in_all": true,
+                    "type": "string"
+                  },
                   "supplierQuestions": {
                     "include_in_all": false,
                     "type": "string"
@@ -343,6 +387,11 @@
                 }
               },
               "parentForm": {
+                "analyzer": "whitespace_lower",
+                "include_in_all": false,
+                "type": "string"
+              },
+              "question": {
                 "analyzer": "whitespace_lower",
                 "include_in_all": false,
                 "type": "string"
