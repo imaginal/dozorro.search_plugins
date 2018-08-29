@@ -20,6 +20,10 @@ class SearchPlugin(BasePlugin):
         }
     }
     search_maps = {
+        'fulltext_map': {
+            'risk_code_all': 'dozorro.riskCodes',
+            'form_code_all': 'dozorro.formModels',
+        },
         'match_map': {
             'risk_code': 'dozorro.riskCodes',
             'form_code': 'dozorro.formModels',
@@ -27,17 +31,6 @@ class SearchPlugin(BasePlugin):
         'range_map': {
             'form_count': 'dozorro.formsCount',
             'risk_score': 'dozorro.riskScore',
-            'risk_F1000': 'dozorro.riskValues.F1000',
-            'risk_F1100': 'dozorro.riskValues.F1100',
-            'risk_F1110': 'dozorro.riskValues.F1110',
-            'risk_F1200': 'dozorro.riskValues.F1200',
-            'risk_F1210': 'dozorro.riskValues.F1210',
-            'risk_F2100': 'dozorro.riskValues.F2100',
-            'risk_F2110': 'dozorro.riskValues.F2110',
-            'risk_F2120': 'dozorro.riskValues.F2120',
-            'risk_F2200': 'dozorro.riskValues.F2200',
-            'risk_F2210': 'dozorro.riskValues.F2210',
-            'risk_F2220': 'dozorro.riskValues.F2220',
             'risk_R1020': 'dozorro.riskValues.R1020',
             'risk_R1030': 'dozorro.riskValues.R1030',
             'risk_R1040': 'dozorro.riskValues.R1040',
@@ -102,6 +95,8 @@ class SearchPlugin(BasePlugin):
         'json_forms': False,
         'skip_until': None
     }
+    stat_skipped = 0
+    stat_changed = 0
 
     def __init__(self, config):
         self.index_mappings = json.loads(get_data(__name__, 'settings/tender.json'))
@@ -152,10 +147,12 @@ class SearchPlugin(BasePlugin):
         self.cursor.execute(
             "SELECT risk_code, lot_id, risk_value " +
             "FROM dozorro_risk_values " +
-            "WHERE tender_id=%s", (tender_id,))
+            "WHERE tender_id=%s AND risk_code LIKE %s", (tender_id, 'R%'))
         risk_dict = {}
         code_dict = {}
         for risk_code, lot_id, risk_value in self.cursor.fetchall():
+            if risk_code[0] != 'R' or risk_value is None:
+                continue
             if lot_id not in risk_dict:
                 risk_dict[lot_id] = {}
             try:
@@ -166,7 +163,7 @@ class SearchPlugin(BasePlugin):
             if risk_code not in code_dict:
                 code_dict[risk_code] = 1
         if risk_dict:
-            data["riskCodes"] = " ".join(code_dict.keys())
+            data["riskCodes"] = " ".join(sorted(code_dict.keys()))
             data["riskValues"] = list()
             for lot_id, risks in risk_dict.items():
                 if lot_id:
@@ -175,7 +172,7 @@ class SearchPlugin(BasePlugin):
 
     def query_risk_score(self, data, tender_id):
         self.cursor.execute(
-            "SELECT lot_id, risk_value " +
+            "SELECT lot_id, MAX(risk_value) " +
             "FROM dozorro_risk_score " +
             "WHERE tender_id=%s AND risk_value > 0", (tender_id,))
         max_value = 0
@@ -197,7 +194,7 @@ class SearchPlugin(BasePlugin):
             forms_list.append(payload)
             schema_dict[schema] = 1
         if forms_list:
-            data["formModels"] = " ".join(schema_dict.keys())
+            data["formModels"] = " ".join(sorted(schema_dict.keys()))
             data["formsCount"] = len(forms_list)
             data["forms"] = forms_list
 
@@ -228,7 +225,11 @@ class SearchPlugin(BasePlugin):
         dateModified = item['meta']['dateModified']
         if self.plugin_config['skip_until'] and dateModified:
             if self.plugin_config['skip_until'] > dateModified:
+                self.stat_skipped += 1
                 return
         dozorro_data = self.query_item_data(index, item)
         if dozorro_data:
             item['data']['dozorro'] = dozorro_data
+            self.stat_changed += 1
+        if dozorro_data and self.stat_changed % 100 == 0:
+            logger.info("Dozorro plugin update %d tenders", self.stat_changed)
