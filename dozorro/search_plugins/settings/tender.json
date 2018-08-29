@@ -48,6 +48,7 @@
                         "type": "string"
                       },
                       "postalCode": {
+                        "analyzer": "postalcode",
                         "include_in_all": true,
                         "type": "string"
                       },
@@ -74,6 +75,7 @@
                         "type": "string"
                       },
                       "scheme": {
+                        "analyzer": "whitespace_lower",
                         "include_in_all": false,
                         "type": "string"
                       }
@@ -83,6 +85,7 @@
                     "include_in_all": true,
                     "properties": {
                       "email": {
+                        "analyzer": "whitespace_lower",
                         "include_in_all": true,
                         "type": "string"
                       },
@@ -95,6 +98,7 @@
                         "type": "string"
                       },
                       "telephone": {
+                        "analyzer": "telephone",
                         "include_in_all": true,
                         "type": "string"
                       },
@@ -108,6 +112,7 @@
                     "include_in_all": true,
                     "properties": {
                       "id": {
+                        "analyzer": "whitespace_lower",
                         "include_in_all": true,
                         "type": "string"
                       },
@@ -116,7 +121,8 @@
                         "type": "string"
                       },
                       "scheme": {
-                        "include_in_all": true,
+                        "analyzer": "whitespace_lower",
+                        "include_in_all": false,
                         "type": "string"
                       },
                       "uri": {
