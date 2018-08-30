@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 import MySQLdb
 import simplejson as json
+from time import mktime
+from iso8601 import parse_date
 from pkgutil import get_data
 from logging import getLogger
 from openprocurement.search.base_plugin import BasePlugin
@@ -97,6 +99,7 @@ class SearchPlugin(BasePlugin):
     }
     stat_skipped = 0
     stat_changed = 0
+    stat_version = 0
 
     def __init__(self, config):
         self.index_mappings = json.loads(get_data(__name__, 'settings/tender.json'))
@@ -145,12 +148,13 @@ class SearchPlugin(BasePlugin):
 
     def query_risk_values(self, data, tender_id):
         self.cursor.execute(
-            "SELECT risk_code, lot_id, risk_value " +
+            "SELECT risk_code, lot_id, risk_value, date " +
             "FROM dozorro_risk_values " +
             "WHERE tender_id=%s AND risk_code LIKE %s", (tender_id, 'R%'))
         risk_dict = {}
         code_dict = {}
-        for risk_code, lot_id, risk_value in self.cursor.fetchall():
+        max_date = ''
+        for risk_code, lot_id, risk_value, risk_date in self.cursor.fetchall():
             if risk_code[0] != 'R' or risk_value is None:
                 continue
             if lot_id not in risk_dict:
@@ -160,9 +164,13 @@ class SearchPlugin(BasePlugin):
             except (TypeError, ValueError):
                 risk_value = 1 if risk_value else 0
             risk_dict[lot_id][risk_code] = risk_value
+            if risk_date > max_date:
+                max_date = risk_date
             if risk_code not in code_dict:
                 code_dict[risk_code] = 1
         if risk_dict:
+            if max_date > data.get("dateModified", ""):
+                data["dateModified"] = max_date
             data["riskCodes"] = " ".join(sorted(code_dict.keys()))
             data["riskValues"] = list()
             for lot_id, risks in risk_dict.items():
@@ -183,17 +191,23 @@ class SearchPlugin(BasePlugin):
 
     def query_json_forms(self, data, tender_id):
         self.cursor.execute(
-            "SELECT `object_id`, `schema`, `payload` " +
+            "SELECT `object_id`, `date`, `schema`, `payload` " +
             "FROM perevorot_dozorro_json_forms " +
             "WHERE tender=%s AND model=%s", (tender_id, 'form'))
         schema_dict = {}
         forms_list = []
-        for object_id, schema, payload in self.cursor.fetchall():
+        max_date = ''
+        for object_id, form_date, schema, payload in self.cursor.fetchall():
             payload = json.loads(payload)
             payload['id'] = object_id
             forms_list.append(payload)
-            schema_dict[schema] = 1
+            if form_date > max_date:
+                max_date = form_date
+            if schema not in schema_dict:
+                schema_dict[schema] = 1
         if forms_list:
+            if max_date > data.get("dateModified", ""):
+                data["dateModified"] = max_date
             data["formModels"] = " ".join(sorted(schema_dict.keys()))
             data["formsCount"] = len(forms_list)
             data["forms"] = forms_list
@@ -221,15 +235,34 @@ class SearchPlugin(BasePlugin):
                     index.engine.sleep(10)
                 self.create_cursor()
 
+    def get_version(self, dateModified):
+        if len(dateModified) < 18 or dateModified[:3] != "201":  # TODO fix in 2020
+            return 0
+        dt = parse_date(dateModified.replace(" ", "T") + ".000Z")
+        version = 1e6 * mktime(dt.timetuple()) + dt.microsecond
+        return long(version)
+
     def before_index_item(self, index, item):
         dateModified = item['meta']['dateModified']
         if self.plugin_config['skip_until'] and dateModified:
             if self.plugin_config['skip_until'] > dateModified:
                 self.stat_skipped += 1
                 return
+
         dozorro_data = self.query_item_data(index, item)
-        if dozorro_data:
-            item['data']['dozorro'] = dozorro_data
-            self.stat_changed += 1
-        if dozorro_data and self.stat_changed % 100 == 0:
-            logger.info("Dozorro plugin update %d tenders", self.stat_changed)
+        if not dozorro_data:
+            return
+
+        if 'dateModified' in dozorro_data:
+            version = self.get_version(dozorro_data['dateModified'])
+            if version > item['meta']['version']:
+                item['meta']['version'] = version
+                self.stat_version += 1
+
+        item['data']['dozorro'] = dozorro_data
+        self.stat_changed += 1
+
+        if self.stat_changed % 100 == 0:
+            index_name = index.next_index_name if index.next_index_name else index.current_index
+            logger.info("[%s] Dozorro plugin %d skipped %d meta change %d data change",
+                index_name, self.stat_skipped, self.stat_version, self.stat_changed)

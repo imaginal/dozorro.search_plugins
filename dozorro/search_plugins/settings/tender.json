@@ -2,6 +2,11 @@
   "dozorro": {
     "include_in_all": false,
     "properties": {
+      "dateModified": {
+        "format": "dateOptionalTime",
+        "include_in_all": false,
+        "type": "date"
+      },
       "formModels": {
         "analyzer": "whitespace_lower",
         "include_in_all": true,
