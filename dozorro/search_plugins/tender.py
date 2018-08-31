@@ -2,9 +2,12 @@
 import MySQLdb
 import simplejson as json
 from time import mktime
+from datetime import datetime
 from iso8601 import parse_date
 from pkgutil import get_data
 from logging import getLogger
+from munch import munchify
+
 from openprocurement.search.base_plugin import BasePlugin
 
 logger = getLogger(__name__)
@@ -95,11 +98,16 @@ class SearchPlugin(BasePlugin):
         'risk_values': False,
         'risk_score': False,
         'json_forms': False,
-        'skip_until': None
+        'skip_until': None,
+        'load_list': False,
+        'list_limit': 1000,
     }
+    tenders_list = []
+    reset_counter = 0
     stat_skipped = 0
     stat_changed = 0
     stat_version = 0
+
 
     def __init__(self, config):
         self.index_mappings = json.loads(get_data(__name__, 'settings/tender.json'))
@@ -146,6 +154,55 @@ class SearchPlugin(BasePlugin):
             logger.warning("Error ping mysql %s", str(e))
             self.create_cursor()
 
+    def before_source_reset(self, index):
+        self.tenders_list = []
+        self.reset_counter = 1000
+        if not self.plugin_config['load_list']:
+            return
+
+        logger.info("Dozorro plugin reset source list...")
+
+        if self.plugin_config['risk_values']:
+            self.cursor.execute(
+                "SELECT tender_id, MAX(date) " +
+                "FROM dozorro_risk_values " +
+                "WHERE risk_code LIKE 'R%' " +
+                "GROUP BY tender_id")
+        for tender_id, risk_date in self.cursor.fetchall():
+            self.tenders_list.append(dict(id=tender_id, dateModified=risk_date))
+
+        if self.plugin_config['json_forms']:
+            self.cursor.execute(
+                "SELECT tender, MAX(date) " +
+                "FROM perevorot_dozorro_json_forms " +
+                "WHERE model = 'form' " +
+                "GROUP BY tender_id")
+        for tender_id, form_date in self.cursor.fetchall():
+            self.tenders_list.append(dict(id=tender_id, dateModified=form_date))
+
+        logger.info("Dozorro plugin loaded list of %d tenders", len(self.tenders_list))
+
+    def before_source_items(self, index):
+        if not self.tenders_list:
+            self.reset_counter -= 1
+            if self.reset_counter < 0:
+                self.source_reset()
+
+        limit = int(self.plugin_config['list_limit'])
+        if limit > len(self.tenders_list):
+            limit = len(self.tenders_list)
+
+        logger.info("Dozorro plugin preload %d of %s tenders", limit, len(self.tenders_list))
+        for item in self.tenders_list[:limit]:
+            if isinstance(item['dateModified'], datetime):
+                item['dateModified'] = item['dateModified'].isoformat()
+            item['doc_type'] = index.source.__doc_type__
+            item['version'] = self.get_version(item['dateModified'])
+            item['ignore_exists'] = True
+            yield munchify(item)
+
+        self.tenders_list = self.tenders_list[limit:]
+
     def query_risk_values(self, data, tender_id):
         self.cursor.execute(
             "SELECT risk_code, lot_id, risk_value, date " +
@@ -164,6 +221,8 @@ class SearchPlugin(BasePlugin):
             except (TypeError, ValueError):
                 risk_value = 1 if risk_value else 0
             risk_dict[lot_id][risk_code] = risk_value
+            if isinstance(risk_date, datetime):
+                risk_date = risk_date.isoformat()
             if risk_date > max_date:
                 max_date = risk_date
             if risk_code not in code_dict:
@@ -201,6 +260,8 @@ class SearchPlugin(BasePlugin):
             payload = json.loads(payload)
             payload['id'] = object_id
             forms_list.append(payload)
+            if isinstance(form_date, datetime):
+                form_date = form_date.isoformat()
             if form_date > max_date:
                 max_date = form_date
             if schema not in schema_dict:
@@ -238,7 +299,7 @@ class SearchPlugin(BasePlugin):
     def get_version(self, dateModified):
         if len(dateModified) < 18 or dateModified[:3] != "201":  # TODO fix in 2020
             return 0
-        dt = parse_date(dateModified.replace(" ", "T") + ".000Z")
+        dt = parse_date(dateModified.replace(" ", "T"))
         version = 1e6 * mktime(dt.timetuple()) + dt.microsecond
         return long(version)
 
@@ -254,6 +315,8 @@ class SearchPlugin(BasePlugin):
             return
 
         if 'dateModified' in dozorro_data:
+            if isinstance(dozorro_data['dateModified'], datetime):
+                dozorro_data['dateModified'] = dozorro_data['dateModified'].isoformat()
             version = self.get_version(dozorro_data['dateModified'])
             if version > item['meta']['version']:
                 item['meta']['version'] = version
@@ -264,5 +327,5 @@ class SearchPlugin(BasePlugin):
 
         if self.stat_changed % 100 == 0:
             index_name = index.next_index_name if index.next_index_name else index.current_index
-            logger.info("[%s] Dozorro plugin %d skipped %d meta change %d data change",
+            logger.info("[%s] Dozorro plugin skipped %d meta udpate %d data update %d tenders",
                 index_name, self.stat_skipped, self.stat_version, self.stat_changed)
