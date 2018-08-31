@@ -98,6 +98,7 @@ class SearchPlugin(BasePlugin):
         'risk_values': False,
         'risk_score': False,
         'json_forms': False,
+        'skip_after': None,
         'skip_until': None,
         'load_list': False,
         'list_limit': 1000,
@@ -311,6 +312,10 @@ class SearchPlugin(BasePlugin):
             if self.plugin_config['skip_until'] > dateModified:
                 self.stat_skipped += 1
                 return
+        if self.plugin_config['skip_after'] and dateModified:
+            if self.plugin_config['skip_after'] < dateModified:
+                self.stat_skipped += 1
+                return
 
         dozorro_data = self.query_item_data(index, item)
         if not dozorro_data:
@@ -329,5 +334,5 @@ class SearchPlugin(BasePlugin):
 
         if self.stat_changed % 1000 == 0:
             index_name = index.next_index_name if index.next_index_name else index.current_index
-            logger.info("[%s] Dozorro plugin skipped %d meta udpate %d data update %d tenders",
+            logger.info("[%s] Dozorro plugin %s skipped %d meta and %d data changed",
                 index_name, self.stat_skipped, self.stat_version, self.stat_changed)
