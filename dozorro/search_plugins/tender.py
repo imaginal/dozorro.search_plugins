@@ -325,7 +325,7 @@ class SearchPlugin(BasePlugin):
         item['data']['dozorro'] = dozorro_data
         self.stat_changed += 1
 
-        if self.stat_changed % 100 == 0:
+        if self.stat_changed % 1000 == 0:
             index_name = index.next_index_name if index.next_index_name else index.current_index
             logger.info("[%s] Dozorro plugin skipped %d meta udpate %d data update %d tenders",
                 index_name, self.stat_skipped, self.stat_version, self.stat_changed)
