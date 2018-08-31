@@ -188,7 +188,7 @@ class SearchPlugin(BasePlugin):
             if self.reset_counter < 0:
                 self.source_reset()
             if not self.tenders_list:
-                return []
+                return
 
         limit = int(self.plugin_config['list_limit'])
         if limit > len(self.tenders_list):
