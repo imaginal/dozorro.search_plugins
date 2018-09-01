@@ -163,23 +163,25 @@ class SearchPlugin(BasePlugin):
 
         logger.info("Dozorro plugin reset source list...")
 
-        if self.plugin_config['risk_values']:
-            self.cursor.execute(
-                "SELECT tender_id, MAX(date) " +
-                "FROM dozorro_risk_values " +
-                "WHERE risk_code LIKE 'R%' " +
-                "GROUP BY tender_id")
-        for tender_id, risk_date in self.cursor.fetchall():
-            self.tenders_list.append(dict(id=tender_id, dateModified=risk_date))
-
         if self.plugin_config['json_forms']:
             self.cursor.execute(
                 "SELECT tender, MAX(date) " +
                 "FROM perevorot_dozorro_json_forms " +
                 "WHERE model = 'form' " +
-                "GROUP BY tender_id")
+                "GROUP BY tender_id " +
+                "ORDER BY date DESC")
         for tender_id, form_date in self.cursor.fetchall():
             self.tenders_list.append(dict(id=tender_id, dateModified=form_date))
+
+        if self.plugin_config['risk_values']:
+            self.cursor.execute(
+                "SELECT tender_id, MAX(date) " +
+                "FROM dozorro_risk_values " +
+                "WHERE risk_code LIKE 'R%' " +
+                "GROUP BY tender_id " +
+                "ORDER BY date DESC")
+        for tender_id, risk_date in self.cursor.fetchall():
+            self.tenders_list.append(dict(id=tender_id, dateModified=risk_date))
 
         logger.info("Dozorro plugin loaded list of %d tenders", len(self.tenders_list))
 
