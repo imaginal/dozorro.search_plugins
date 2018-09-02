@@ -108,7 +108,8 @@ class SearchPlugin(BasePlugin):
     stat_skipped = 0
     stat_changed = 0
     stat_version = 0
-
+    stat_errors = 0
+    MIN_VERSION = int(1e15)
 
     def __init__(self, config):
         self.index_mappings = json.loads(get_data(__name__, 'settings/tender.json'))
@@ -198,11 +199,16 @@ class SearchPlugin(BasePlugin):
             limit = len(self.tenders_list)
 
         logger.info("Dozorro plugin preload %d of %s tenders", limit, len(self.tenders_list))
+
         for item in self.tenders_list[:limit]:
             if isinstance(item['dateModified'], datetime):
                 item['dateModified'] = item['dateModified'].isoformat()
             item['doc_type'] = index.source.__doc_type__
             item['version'] = self.get_version(item['dateModified'])
+            if len(item.get('id', '')) != 32 or item['version'] < self.MIN_VERSION:
+                logger.warning("Dozorro plugin bad tender meta {}".format(item))
+                self.stat_errors += 1
+                continue
             item['ignore_exists'] = True
             yield munchify(item)
 
