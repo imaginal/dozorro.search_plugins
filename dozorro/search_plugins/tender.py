@@ -172,7 +172,8 @@ class SearchPlugin(BasePlugin):
                 "GROUP BY tender_id " +
                 "ORDER BY date DESC")
         for tender_id, form_date in self.cursor.fetchall():
-            self.tenders_list.append(dict(id=tender_id, dateModified=form_date))
+            if tender_id and form_date:
+                self.tenders_list.append(dict(id=tender_id, dateModified=form_date))
 
         if self.plugin_config['risk_values']:
             self.cursor.execute(
@@ -182,7 +183,8 @@ class SearchPlugin(BasePlugin):
                 "GROUP BY tender_id " +
                 "ORDER BY date DESC")
         for tender_id, risk_date in self.cursor.fetchall():
-            self.tenders_list.append(dict(id=tender_id, dateModified=risk_date))
+            if tender_id and risk_date:
+                self.tenders_list.append(dict(id=tender_id, dateModified=risk_date))
 
         logger.info("Dozorro plugin loaded list of %d tenders", len(self.tenders_list))
 
@@ -205,7 +207,7 @@ class SearchPlugin(BasePlugin):
                 item['dateModified'] = item['dateModified'].isoformat()
             item['doc_type'] = index.source.__doc_type__
             item['version'] = self.get_version(item['dateModified'])
-            if len(item.get('id', '')) != 32 or item['version'] < self.MIN_VERSION:
+            if len(item['id']) != 32 or item['version'] < self.MIN_VERSION:
                 logger.warning("Dozorro plugin bad tender meta {}".format(item))
                 self.stat_errors += 1
                 continue
