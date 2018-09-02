@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 import MySQLdb
 import simplejson as json
-from time import mktime
+from time import time, mktime
 from datetime import datetime
 from iso8601 import parse_date
 from pkgutil import get_data
@@ -109,7 +109,7 @@ class SearchPlugin(BasePlugin):
     stat_changed = 0
     stat_version = 0
     stat_errors = 0
-    MIN_VERSION = int(1e15)
+    min_version = long(1e15)
 
     def __init__(self, config):
         self.index_mappings = json.loads(get_data(__name__, 'settings/tender.json'))
@@ -159,6 +159,7 @@ class SearchPlugin(BasePlugin):
     def before_source_reset(self, index):
         self.tenders_list = []
         self.reset_counter = 1000
+        self.max_version = long(1e6 * time())
         if not self.plugin_config['load_list']:
             return
 
@@ -207,7 +208,7 @@ class SearchPlugin(BasePlugin):
                 item['dateModified'] = item['dateModified'].isoformat()
             item['doc_type'] = index.source.__doc_type__
             item['version'] = self.get_version(item['dateModified'])
-            if len(item['id']) != 32 or item['version'] < self.MIN_VERSION:
+            if item['version'] < self.min_version or item['version'] > self.max_version:
                 logger.warning("Dozorro plugin bad tender meta {}".format(item))
                 self.stat_errors += 1
                 continue
