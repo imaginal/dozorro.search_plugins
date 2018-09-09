@@ -193,7 +193,7 @@ class SearchPlugin(BasePlugin):
         if not self.tenders_list:
             self.reset_counter -= 1
             if self.reset_counter < 0:
-                self.source_reset()
+                self.before_source_reset()
             if not self.tenders_list:
                 return
 
