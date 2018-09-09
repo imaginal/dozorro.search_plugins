@@ -15,6 +15,7 @@ logger = getLogger(__name__)
 
 class SearchPlugin(BasePlugin):
     __name__ = __name__
+    plugin_api_version = 2.0
 
     index_mappings = {
         "dozorro": {
@@ -124,7 +125,7 @@ class SearchPlugin(BasePlugin):
             if '_timeout' in key:
                 self.mysql_config[key] = int(self.mysql_config[key])
         self.mysql_passwd = config.get('dozorro_passwd', '').strip(" \t'\"")
-        self.create_cursor()
+        self.cursor = None
 
     def create_cursor(self):
         logger.info("Connect to mysql {user}@{host}/{db}".format(**self.mysql_config))
@@ -145,11 +146,13 @@ class SearchPlugin(BasePlugin):
         for k, v in self.mysql_vars.items():
             self.cursor.execute("SET {}={}".format(k, v))
 
-    def start_in_subprocess(self, index):
+    def before_fork_process(self, index):
         self.cursor = None
-        self.create_cursor()
 
-    def before_process_index(self, index):
+    def before_index_source(self, index):
+        if not self.cursor:
+            self.create_cursor()
+            return
         try:
             self.dbcon.ping(True)
         except MySQLdb.MySQLError as e:
@@ -162,6 +165,9 @@ class SearchPlugin(BasePlugin):
         self.max_version = long(1e6 * time())
         if not self.plugin_config['load_list']:
             return
+
+        if not self.cursor:
+            self.create_cursor()
 
         logger.info("Dozorro plugin reset source list...")
 
