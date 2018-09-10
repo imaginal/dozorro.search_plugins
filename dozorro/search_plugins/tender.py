@@ -101,6 +101,7 @@ class SearchPlugin(BasePlugin):
         'json_forms': False,
         'skip_after': None,
         'skip_until': None,
+        'last_forms': False,
         'load_list': False,
         'list_limit': 1000,
     }
@@ -159,10 +160,30 @@ class SearchPlugin(BasePlugin):
             logger.warning("Error ping mysql %s", str(e))
             self.create_cursor()
 
+    def load_last_forms(self):
+        if self.plugin_config['json_forms']:
+            self.cursor.execute(
+                "SELECT tender, MAX(date) " +
+                "FROM perevorot_dozorro_json_forms " +
+                "WHERE date > %s AND model = 'form' " +
+                "GROUP BY tender_id " +
+                "ORDER BY date DESC", [self.last_form_date])
+            last_forms_tenders_list = []
+            for tender_id, form_date in self.cursor.fetchall():
+                if tender_id and form_date:
+                    last_forms_tenders_list.append(dict(id=tender_id, dateModified=form_date))
+            if last_forms_tenders_list:
+                self.max_version = long(1e6 * time())
+                self.last_form_date = str(last_forms_tenders_list[0]['dateModified'])
+                logger.info("Dozorro plugin loaded extra %d form tenders, last %s",
+                    len(last_forms_tenders_list), self.last_form_date)
+                self.tenders_list[0:0] = last_forms_tenders_list
+
     def before_source_reset(self, index):
         self.tenders_list = []
         self.reset_counter = 1000
         self.max_version = long(1e6 * time())
+        self.last_form_date = str(datetime.now())
         if not self.plugin_config['load_list']:
             return
 
@@ -202,6 +223,9 @@ class SearchPlugin(BasePlugin):
                 self.before_source_reset()
             if not self.tenders_list:
                 return
+
+        if self.plugin_config['last_forms']:
+            self.load_last_forms()
 
         limit = int(self.plugin_config['list_limit'])
         if limit > len(self.tenders_list):
