@@ -378,6 +378,5 @@ class SearchPlugin(BasePlugin):
         self.stat_changed += 1
 
         if self.stat_changed % 1000 == 0:
-            index_name = index.next_index_name if index.next_index_name else index.current_index
             logger.info("Dozorro plugin %s tenders skipped, %d meta and %d data changed",
-                index_name, self.stat_skipped, self.stat_version, self.stat_changed)
+                self.stat_skipped, self.stat_version, self.stat_changed)
