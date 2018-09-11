@@ -1,16 +1,18 @@
 # -*- coding: utf-8 -*-
+import os
 import MySQLdb
 import simplejson as json
 from time import time, mktime
-from datetime import datetime
-from iso8601 import parse_date
+from datetime import datetime, timedelta
 from pkgutil import get_data
 from logging import getLogger
 from munch import munchify
 
 from openprocurement.search.base_plugin import BasePlugin
+from openprocurement.search.utils import long_version, TZ
 
 logger = getLogger(__name__)
+
 
 
 class SearchPlugin(BasePlugin):
@@ -87,7 +89,8 @@ class SearchPlugin(BasePlugin):
         'init_command': 'SET NAMES utf8',
         'connect_timeout': 10,
         'read_timeout': 30,
-        'write_timeout': 30
+        'write_timeout': 30,
+        'autocommit': True,
     }
     mysql_vars = {
         'interactive_timeout': 3600,
@@ -125,24 +128,25 @@ class SearchPlugin(BasePlugin):
                 self.mysql_config[key] = config[dozorro_key]
             if '_timeout' in key:
                 self.mysql_config[key] = int(self.mysql_config[key])
-        self.mysql_passwd = config.get('dozorro_passwd', '').strip(" \t'\"")
+        self.mysql_passwd = config.pop('dozorro_passwd', '').strip(" \t'\"")
         self.cursor = None
 
     def create_cursor(self):
-        logger.info("Connect to mysql {user}@{host}/{db}".format(**self.mysql_config))
+        logger.info("Dozorro plugin connect {user}@{host}/{db}".format(
+            **self.mysql_config))
         # close db handle if present
         if getattr(self, 'cursor', None):
             self.cursor = None
-        if getattr(self, 'dbcon', None):
+        if getattr(self, 'dbcnx', None):
             try:
-                dbcon, self.dbcon = self.dbcon, None
-                dbcon.close()
-                del dbcon
+                dbcnx, self.dbcnx = self.dbcnx, None
+                dbcnx.close()
+                del dbcnx
             except MySQLdb.MySQLError:
                 pass
-        self.dbcon = MySQLdb.Connect(passwd=self.mysql_passwd,
+        self.dbcnx = MySQLdb.Connect(passwd=self.mysql_passwd,
             **self.mysql_config)
-        self.cursor = self.dbcon.cursor()
+        self.cursor = self.dbcnx.cursor()
         # update session variables
         for k, v in self.mysql_vars.items():
             self.cursor.execute("SET {}={}".format(k, v))
@@ -155,7 +159,7 @@ class SearchPlugin(BasePlugin):
             self.create_cursor()
             return
         try:
-            self.dbcon.ping(True)
+            self.dbcnx.ping(True)
         except MySQLdb.MySQLError as e:
             logger.warning("Error ping mysql %s", str(e))
             self.create_cursor()
@@ -163,34 +167,38 @@ class SearchPlugin(BasePlugin):
     def load_last_forms(self):
         if self.plugin_config['json_forms']:
             self.cursor.execute(
-                "SELECT tender, MAX(date) " +
+                "SELECT id, tender, date " +
                 "FROM perevorot_dozorro_json_forms " +
-                "WHERE date > %s AND model = 'form' " +
-                "GROUP BY tender_id " +
-                "ORDER BY date DESC", [self.last_form_date])
+                "WHERE id > %s AND model = 'form' " +
+                "ORDER BY id", [self.last_form_id])
             last_forms_tenders_list = []
-            for tender_id, form_date in self.cursor.fetchall():
+            for row_id, tender_id, form_date in self.cursor.fetchall():
                 if tender_id and form_date:
                     last_forms_tenders_list.append(dict(id=tender_id, dateModified=form_date))
+                self.last_form_id = int(row_id)
             if last_forms_tenders_list:
-                self.max_version = long(1e6 * time())
-                self.last_form_date = str(last_forms_tenders_list[0]['dateModified'])
-                logger.info("Dozorro plugin loaded extra %d form tenders, last %s",
-                    len(last_forms_tenders_list), self.last_form_date)
+                self.max_version = long_version(datetime.now())
+                logger.info("Dozorro plugin found %d new form, last %s row_id %d",
+                    len(last_forms_tenders_list), form_date, self.last_form_id)
                 self.tenders_list[0:0] = last_forms_tenders_list
 
     def before_source_reset(self, index):
         self.tenders_list = []
         self.reset_counter = 1000
-        self.max_version = long(1e6 * time())
-        self.last_form_date = str(datetime.now())
+        self.last_form_id = 0
+        self.max_version = long_version(datetime.now())
+
+        self.create_cursor()
+
         if not self.plugin_config['load_list']:
             return
 
-        if not self.cursor:
-            self.create_cursor()
+        logger.info("Dozorro plugin load tenders list...")
 
-        logger.info("Dozorro plugin reset source list...")
+        if self.plugin_config['last_forms']:
+            self.cursor.execute("SELECT MAX(id) FROM perevorot_dozorro_json_forms")
+            for max_id in self.cursor.fetchall():
+                self.last_form_id = int(max_id[0])
 
         if self.plugin_config['json_forms']:
             self.cursor.execute(
@@ -199,9 +207,9 @@ class SearchPlugin(BasePlugin):
                 "WHERE model = 'form' " +
                 "GROUP BY tender_id " +
                 "ORDER BY date DESC")
-        for tender_id, form_date in self.cursor.fetchall():
-            if tender_id and form_date:
-                self.tenders_list.append(dict(id=tender_id, dateModified=form_date))
+            for tender_id, form_date in self.cursor.fetchall():
+                if tender_id and form_date:
+                    self.tenders_list.append(dict(id=tender_id, dateModified=form_date))
 
         if self.plugin_config['risk_values']:
             self.cursor.execute(
@@ -210,22 +218,23 @@ class SearchPlugin(BasePlugin):
                 "WHERE risk_code LIKE 'R%' " +
                 "GROUP BY tender_id " +
                 "ORDER BY date DESC")
-        for tender_id, risk_date in self.cursor.fetchall():
-            if tender_id and risk_date:
-                self.tenders_list.append(dict(id=tender_id, dateModified=risk_date))
+            for tender_id, risk_date in self.cursor.fetchall():
+                if tender_id and risk_date:
+                    self.tenders_list.append(dict(id=tender_id, dateModified=risk_date))
 
-        logger.info("Dozorro plugin loaded list of %d tenders", len(self.tenders_list))
+        logger.info("Dozorro plugin preload list of %d tenders", len(self.tenders_list))
 
     def before_source_items(self, index):
         if not self.tenders_list:
             self.reset_counter -= 1
             if self.reset_counter < 0:
                 self.before_source_reset()
-            if not self.tenders_list:
-                return
 
         if self.plugin_config['last_forms']:
             self.load_last_forms()
+
+        if not self.tenders_list:
+            return
 
         limit = int(self.plugin_config['list_limit'])
         if limit > len(self.tenders_list):
@@ -234,14 +243,17 @@ class SearchPlugin(BasePlugin):
         logger.info("Dozorro plugin preload %d of %s tenders", limit, len(self.tenders_list))
 
         for item in self.tenders_list[:limit]:
-            if isinstance(item['dateModified'], datetime):
-                item['dateModified'] = item['dateModified'].isoformat()
             item['doc_type'] = index.source.__doc_type__
-            item['version'] = self.get_version(item['dateModified'])
+            item['version'] = long_version(item['dateModified'])
             if item['version'] < self.min_version or item['version'] > self.max_version:
                 logger.warning("Dozorro plugin bad tender meta {}".format(item))
                 self.stat_errors += 1
                 continue
+            if isinstance(item['dateModified'], datetime):
+                dateModified = item['dateModified']
+                if dateModified.tzinfo is None:
+                    dateModified = dateModified.replace(tzinfo=TZ)
+                item['dateModified'] = dateModified.isoformat()
             item['ignore_exists'] = True
             yield munchify(item)
 
@@ -254,7 +266,7 @@ class SearchPlugin(BasePlugin):
             "WHERE tender_id=%s AND risk_code LIKE %s", (tender_id, 'R%'))
         risk_dict = {}
         code_dict = {}
-        max_date = ''
+        max_date = None
         for risk_code, lot_id, risk_value, risk_date in self.cursor.fetchall():
             if risk_code[0] != 'R' or risk_value is None:
                 continue
@@ -265,14 +277,12 @@ class SearchPlugin(BasePlugin):
             except (TypeError, ValueError):
                 risk_value = 1 if risk_value else 0
             risk_dict[lot_id][risk_code] = risk_value
-            if isinstance(risk_date, datetime):
-                risk_date = risk_date.isoformat()
-            if risk_date > max_date:
+            if max_date is None or max_date < risk_date:
                 max_date = risk_date
             if risk_code not in code_dict:
                 code_dict[risk_code] = 1
         if risk_dict:
-            if max_date > data.get("dateModified", ""):
+            if "dateModified" not in data or max_date > data["dateModified"]:
                 data["dateModified"] = max_date
             data["riskCodes"] = " ".join(sorted(code_dict.keys()))
             data["riskValues"] = list()
@@ -299,19 +309,17 @@ class SearchPlugin(BasePlugin):
             "WHERE tender=%s AND model=%s", (tender_id, 'form'))
         schema_dict = {}
         forms_list = []
-        max_date = ''
+        max_date = None
         for object_id, form_date, schema, payload in self.cursor.fetchall():
             payload = json.loads(payload)
             payload['id'] = object_id
             forms_list.append(payload)
-            if isinstance(form_date, datetime):
-                form_date = form_date.isoformat()
-            if form_date > max_date:
+            if max_date is None or max_date < form_date:
                 max_date = form_date
             if schema not in schema_dict:
                 schema_dict[schema] = 1
         if forms_list:
-            if max_date > data.get("dateModified", ""):
+            if "dateModified" not in data or max_date > data["dateModified"]:
                 data["dateModified"] = max_date
             data["formModels"] = " ".join(sorted(schema_dict.keys()))
             data["formsCount"] = len(forms_list)
@@ -340,13 +348,6 @@ class SearchPlugin(BasePlugin):
                     index.engine.sleep(10)
                 self.create_cursor()
 
-    def get_version(self, dateModified):
-        if len(dateModified) < 18 or dateModified[:3] != "201":  # TODO fix in 2020
-            return 0
-        dt = parse_date(dateModified.replace(" ", "T"))
-        version = 1e6 * mktime(dt.timetuple()) + dt.microsecond
-        return long(version)
-
     def before_index_item(self, index, item):
         dateModified = item['meta']['dateModified']
         if self.plugin_config['skip_until'] and dateModified:
@@ -363,12 +364,15 @@ class SearchPlugin(BasePlugin):
             return
 
         if 'dateModified' in dozorro_data:
-            if isinstance(dozorro_data['dateModified'], datetime):
-                dozorro_data['dateModified'] = dozorro_data['dateModified'].isoformat()
-            version = self.get_version(dozorro_data['dateModified'])
+            dateModified = dozorro_data['dateModified']
+            version = long_version(dateModified)
             if version > item['meta']['version']:
                 item['meta']['version'] = version
                 self.stat_version += 1
+            if isinstance(dateModified, datetime):
+                if dateModified.tzinfo is None:
+                    dateModified = dateModified.replace(tzinfo=TZ)
+                dozorro_data['dateModified'] = dateModified.isoformat()
 
         item['data']['dozorro'] = dozorro_data
         self.stat_changed += 1
