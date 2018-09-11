@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='dozorro.search_plugins',
-    version='0.3b1', # NOQA
+    version='0.3b2', # NOQA
     description="Dozorro Plugin for OpenProcurement Search",
     long_description=open("README.md").read(),
     # Get more strings from
@@ -24,7 +24,8 @@ setup(
     install_requires=[
         'openprocurement.search',
         'mysqlclient>=1.3',
-        'simplejson>=3.11'
+        'simplejson>=3.11',
+        'munch'
     ],
     entry_points={
     }
