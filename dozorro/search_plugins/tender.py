@@ -228,7 +228,7 @@ class SearchPlugin(BasePlugin):
         if not self.tenders_list:
             self.reset_counter -= 1
             if self.reset_counter < 0:
-                self.before_source_reset()
+                self.before_source_reset(index)
 
         if self.plugin_config['last_forms']:
             self.load_last_forms()
