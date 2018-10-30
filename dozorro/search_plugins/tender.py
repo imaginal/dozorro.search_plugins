@@ -99,6 +99,9 @@ class SearchPlugin(BasePlugin):
         'wait_timeout': 3600
     }
     plugin_config = {
+        'json_forms_table': 'perevorot_dozorro_json_forms',
+        'risk_values_table': 'dozorro_risk_values',
+        'risk_score_table': 'dozorro_risk_score',
         'risk_values': False,
         'risk_score': False,
         'json_forms': False,
@@ -166,9 +169,10 @@ class SearchPlugin(BasePlugin):
 
     def load_last_forms(self):
         if self.plugin_config['json_forms']:
+            json_forms_table = self.plugin_config['json_forms_table']
             self.cursor.execute(
                 "SELECT id, tender, date " +
-                "FROM perevorot_dozorro_json_forms " +
+                "FROM `" + json_forms_table + "` " +
                 "WHERE id > %s AND model = 'form' " +
                 "ORDER BY id", [self.last_form_id])
             last_forms_tenders_list = []
@@ -201,9 +205,10 @@ class SearchPlugin(BasePlugin):
                 self.last_form_id = int(max_id[0])
 
         if self.plugin_config['json_forms']:
+            json_forms_table = self.plugin_config['json_forms_table']
             self.cursor.execute(
                 "SELECT tender, MAX(date) " +
-                "FROM perevorot_dozorro_json_forms " +
+                "FROM `" + json_forms_table + "` " +
                 "WHERE model = 'form' " +
                 "GROUP BY tender_id " +
                 "ORDER BY date DESC")
@@ -212,9 +217,10 @@ class SearchPlugin(BasePlugin):
                     self.tenders_list.append(dict(id=tender_id, dateModified=form_date))
 
         if self.plugin_config['risk_values']:
+            risk_values_table = self.plugin_config['risk_values_table']
             self.cursor.execute(
                 "SELECT tender_id, MAX(date) " +
-                "FROM dozorro_risk_values " +
+                "FROM `" + risk_values_table + "` " +
                 "WHERE risk_code LIKE 'R%' " +
                 "GROUP BY tender_id " +
                 "ORDER BY date DESC")
@@ -223,9 +229,10 @@ class SearchPlugin(BasePlugin):
                     self.tenders_list.append(dict(id=tender_id, dateModified=risk_date))
 
         if self.plugin_config['risk_score']:
+            risk_score_table = self.plugin_config['risk_score_table']
             self.cursor.execute(
                 "SELECT tender_id, MAX(date) " +
-                "FROM dozorro_risk_score " +
+                "FROM `" + risk_score_table + "` " +
                 "GROUP BY tender_id " +
                 "ORDER BY date DESC")
             for tender_id, score_date in self.cursor.fetchall():
@@ -270,9 +277,10 @@ class SearchPlugin(BasePlugin):
         self.tenders_list = self.tenders_list[limit:]
 
     def query_risk_values(self, data, tender_id):
+        risk_values_table = self.plugin_config['risk_values_table']
         self.cursor.execute(
             "SELECT risk_code, lot_id, risk_value, date " +
-            "FROM dozorro_risk_values " +
+            "FROM `" + risk_values_table + "` " +
             "WHERE tender_id=%s AND risk_code LIKE %s", (tender_id, 'R%'))
         risk_dict = {}
         code_dict = {}
@@ -302,9 +310,10 @@ class SearchPlugin(BasePlugin):
                 data["riskValues"].append(risks)
 
     def query_risk_score(self, data, tender_id):
+        risk_score_table = self.plugin_config['risk_score_table']
         self.cursor.execute(
             "SELECT lot_id, MAX(risk_value), MAX(date) " +
-            "FROM dozorro_risk_score " +
+            "FROM `" + risk_score_table + "` " +
             "WHERE tender_id=%s AND risk_value > 0", (tender_id,))
         max_value = 0
         max_date = None
@@ -319,9 +328,10 @@ class SearchPlugin(BasePlugin):
                 data["dateModified"] = max_date
 
     def query_json_forms(self, data, tender_id):
+        json_forms_table = self.plugin_config['json_forms_table']
         self.cursor.execute(
             "SELECT `object_id`, `date`, `schema`, `payload` " +
-            "FROM perevorot_dozorro_json_forms " +
+            "FROM `" + json_forms_table + "` " +
             "WHERE tender=%s AND model=%s", (tender_id, 'form'))
         schema_dict = {}
         forms_list = []
