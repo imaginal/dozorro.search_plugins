@@ -222,6 +222,16 @@ class SearchPlugin(BasePlugin):
                 if tender_id and risk_date:
                     self.tenders_list.append(dict(id=tender_id, dateModified=risk_date))
 
+        if self.plugin_config['risk_score']:
+            self.cursor.execute(
+                "SELECT tender_id, MAX(date) " +
+                "FROM dozorro_risk_score " +
+                "GROUP BY tender_id " +
+                "ORDER BY date DESC")
+            for tender_id, score_date in self.cursor.fetchall():
+                if tender_id and score_date:
+                    self.tenders_list.append(dict(id=tender_id, dateModified=score_date))
+
         logger.info("Dozorro plugin preload list of %d tenders", len(self.tenders_list))
 
     def before_source_items(self, index):
@@ -293,14 +303,20 @@ class SearchPlugin(BasePlugin):
 
     def query_risk_score(self, data, tender_id):
         self.cursor.execute(
-            "SELECT lot_id, MAX(risk_value) " +
+            "SELECT lot_id, MAX(risk_value), MAX(date) " +
             "FROM dozorro_risk_score " +
             "WHERE tender_id=%s AND risk_value > 0", (tender_id,))
         max_value = 0
-        for lot_id, risk_value in self.cursor.fetchall():
+        max_date = None
+        for lot_id, risk_value, risk_date in self.cursor.fetchall():
             if risk_value and risk_value > max_value:
                 data["riskScore"] = float(risk_value)
                 max_value = risk_value
+            if max_date is None or max_date < risk_date:
+                max_date = risk_date
+        if max_value and max_date:
+            if "dateModified" not in data or max_date > data["dateModified"]:
+                data["dateModified"] = max_date
 
     def query_json_forms(self, data, tender_id):
         self.cursor.execute(
