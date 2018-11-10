@@ -434,9 +434,33 @@
         "include_in_all": false,
         "type": "double"
       },
+      "riskScoreLots": {
+        "include_in_all": false,
+        "properties": {
+          "dateModified": {
+            "format": "dateOptionalTime",
+            "include_in_all": false,
+            "type": "date"
+          },
+          "lotID": {
+            "analyzer": "whitespace_lower",
+            "include_in_all": true,
+            "type": "string"
+          },
+          "riskScore": {
+            "include_in_all": false,
+            "type": "double"
+          }
+        }
+      },
       "riskValues": {
         "include_in_all": false,
         "properties": {
+          "dateModified": {
+            "format": "dateOptionalTime",
+            "include_in_all": false,
+            "type": "date"
+          },
           "F1000": {
             "include_in_all": false,
             "type": "double"
