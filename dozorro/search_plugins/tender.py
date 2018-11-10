@@ -281,13 +281,17 @@ class SearchPlugin(BasePlugin):
         self.cursor.execute(
             "SELECT risk_code, lot_id, risk_value, date " +
             "FROM `" + risk_values_table + "` " +
-            "WHERE tender_id=%s AND risk_code LIKE %s", (tender_id, 'R%'))
+            "WHERE tender_id=%s AND risk_code LIKE %s " +
+            "ORDER BY date DESC", (tender_id, 'R%'))
         risk_dict = {}
         code_dict = {}
         max_date = None
         for risk_code, lot_id, risk_value, risk_date in self.cursor.fetchall():
             if risk_code[0] != 'R' or risk_value is None:
                 continue
+            if isinstance(risk_date, datetime):
+                if risk_date.tzinfo is None:
+                    risk_date = risk_date.replace(tzinfo=TZ)
             if lot_id not in risk_dict:
                 risk_dict[lot_id] = {}
             try:
@@ -295,6 +299,8 @@ class SearchPlugin(BasePlugin):
             except (TypeError, ValueError):
                 risk_value = 1 if risk_value else 0
             risk_dict[lot_id][risk_code] = risk_value
+            if risk_date:
+                risk_dict[lot_id]["dateModified"] = risk_date
             if max_date is None or max_date < risk_date:
                 max_date = risk_date
             if risk_code not in code_dict:
@@ -303,7 +309,8 @@ class SearchPlugin(BasePlugin):
             if "dateModified" not in data or max_date > data["dateModified"]:
                 data["dateModified"] = max_date
             data["riskCodes"] = " ".join(sorted(code_dict.keys()))
-            data["riskValues"] = list()
+            if "riskValues" not in data:
+                data["riskValues"] = list()
             for lot_id, risks in risk_dict.items():
                 if lot_id:
                     risks["lotID"] = lot_id
@@ -318,8 +325,19 @@ class SearchPlugin(BasePlugin):
         max_value = 0
         max_date = None
         for lot_id, risk_value, risk_date in self.cursor.fetchall():
+            if isinstance(risk_date, datetime):
+                if risk_date.tzinfo is None:
+                    risk_date = risk_date.replace(tzinfo=TZ)
+            if lot_id:
+                if "riskScoreLots" not in data:
+                    data["riskScoreLots"] = list()
+                data["riskScoreLots"].append({
+                    "dateModified": risk_date.isoformat(),
+                    "lotID": lot_id,
+                    "riskScore": round(risk_value, 4)
+                })
             if risk_value and risk_value > max_value:
-                data["riskScore"] = float(risk_value)
+                data["riskScore"] = round(risk_value, 4)
                 max_value = risk_value
             if max_date is None or max_date < risk_date:
                 max_date = risk_date
@@ -340,6 +358,9 @@ class SearchPlugin(BasePlugin):
             payload = json.loads(payload)
             payload['id'] = object_id
             forms_list.append(payload)
+            if isinstance(form_date, datetime):
+                if form_date.tzinfo is None:
+                    form_date = form_date.replace(tzinfo=TZ)
             if max_date is None or max_date < form_date:
                 max_date = form_date
             if schema not in schema_dict:
