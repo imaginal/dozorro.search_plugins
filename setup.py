@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='dozorro.search_plugins',
-    version='0.3b2', # NOQA
+    version='0.3b3', # NOQA
     description="Dozorro Plugin for OpenProcurement Search",
     long_description=open("README.md").read(),
     # Get more strings from
