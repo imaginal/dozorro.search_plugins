@@ -581,6 +581,14 @@
             "include_in_all": false,
             "type": "double"
           },
+          "R2060": {
+            "include_in_all": false,
+            "type": "double"
+          },
+          "R2070": {
+            "include_in_all": false,
+            "type": "double"
+          },
           "R3010": {
             "include_in_all": false,
             "type": "double"
@@ -650,6 +658,10 @@
             "type": "double"
           },
           "R4078": {
+            "include_in_all": false,
+            "type": "double"
+          },
+          "R5010": {
             "include_in_all": false,
             "type": "double"
           },
