@@ -36,6 +36,10 @@ class SearchPlugin(BasePlugin):
             'risk_code': 'dozorro.riskCodes',
             'form_code': 'dozorro.formModels',
         },
+        'prefix_map': {
+            'risk_code_like': 'dozorro.riskCodes',
+            'form_code_like': 'dozorro.formModels',
+        },
         'range_map': {
             'form_count': 'dozorro.formsCount',
             'risk_score': 'dozorro.riskScore',
